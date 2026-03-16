@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPECLib Index Generator</title>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --border-strong: #c8c5bb;
+    --text: #1a1917;
+    --text-muted: #6b6860;
+    --text-hint: #a09e98;
+    --blue: #185FA5;
+    --blue-light: #e8f1fb;
+    --blue-dark: #0c447c;
+    --green: #2d7a3a;
+    --green-light: #eaf4ec;
+    --red: #c0392b;
+    --red-light: #fdf0ee;
+    --amber: #92600a;
+    --amber-light: #fef8ec;
+    --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    --sans: -apple-system, 'Segoe UI', sans-serif;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 16px;
+  }
+
+  .shell {
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .header {
+    margin-bottom: 28px;
+  }
+
+  .header h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    margin-bottom: 4px;
+  }
+
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 14px;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-hint);
+    margin-bottom: 14px;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 8px 11px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--surface);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+
+  input:focus, select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(24,95,165,0.1);
+  }
+
+  input.mono { font-family: var(--mono); font-size: 13px; }
+
+  .row { display: flex; gap: 10px; }
+  .row .field { flex: 1; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--sans);
+    color: var(--text);
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+  }
+
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  .btn-primary:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  .actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+  .siblings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 14px;
+  }
+
+  .sib-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 11px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    cursor: pointer;
+    transition: border-color 0.12s, background 0.12s;
+  }
+
+  .sib-row:hover { border-color: var(--border-strong); background: var(--bg); }
+  .sib-row.selected { border-color: var(--blue); background: var(--blue-light); }
+
+  .sib-index {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--blue);
+    min-width: 72px;
+    font-weight: 500;
+  }
+
+  .sib-label { flex: 1; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sib-key { font-family: var(--mono); font-size: 11px; color: var(--text-hint); }
+  .sib-arrow { color: var(--text-hint); font-size: 11px; }
+
+  .next-index-display {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--blue-light);
+    border: 1px solid #b5d4f4;
+    border-radius: var(--radius);
+    margin-bottom: 14px;
+  }
+
+  .next-index-value {
+    font-family: var(--mono);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--blue);
+  }
+
+  .next-index-label {
+    font-size: 12px;
+    color: var(--blue-dark);
+  }
+
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-wrap: wrap;
+    margin-bottom: 14px;
+    min-height: 24px;
+  }
+
+  .crumb {
+    font-size: 12px;
+    color: var(--blue);
+    cursor: pointer;
+    padding: 2px 7px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-family: var(--mono);
+  }
+
+  .crumb:hover { border-color: var(--blue); }
+  .crumb.current { color: var(--text-muted); cursor: default; border-color: transparent; background: transparent; font-family: var(--sans); font-family: var(--sans); }
+
+  .crumb-sep { color: var(--text-hint); font-size: 12px; }
+
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+
+  .alert-error { background: var(--red-light); color: var(--red); border: 1px solid #f5c0ba; }
+  .alert-success { background: var(--green-light); color: var(--green); border: 1px solid #b8e0be; }
+  .alert-info { background: var(--amber-light); color: var(--amber); border: 1px solid #f5d98a; }
+
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(24,95,165,0.2);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .hidden { display: none !important; }
+
+  .config-link {
+    font-size: 12px;
+    color: var(--text-hint);
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+  }
+  .config-link:hover { color: var(--text-muted); text-decoration-color: var(--text-muted); }
+
+  .empty { font-size: 13px; color: var(--text-hint); padding: 10px 0; text-align: center; }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 14px 0; }
+
+  .level-info { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 999px;
+    font-weight: 500;
+    background: var(--blue-light);
+    color: var(--blue-dark);
+    margin-left: 6px;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-hint);
+    margin-top: 24px;
+  }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <h1>SPECLib Index Generator</h1>
+    <p>Navigate the requirement hierarchy, auto-generate the next index, and create issues directly in Jira. &nbsp;<span class="config-link" onclick="showConfig()">⚙ Settings</span></p>
+  </div>
+
+  <!-- CONFIG PANEL -->
+  <div class="card" id="configPanel">
+    <div class="card-title">Jira Connection Settings</div>
+    <div class="row">
+      <div class="field">
+        <label>Jira site URL</label>
+        <input type="text" id="cfgSite" placeholder="yourcompany.atlassian.net" class="mono" />
+      </div>
+      <div class="field">
+        <label>Your email</label>
+        <input type="email" id="cfgEmail" placeholder="you@company.com" />
+      </div>
+    </div>
+    <div class="field">
+      <label>API Token &nbsp;<a href="https://id.atlassian.com/manage-profile/security/api-tokens" target="_blank" style="font-size:11px;color:var(--blue)">Generate one ↗</a></label>
+      <input type="password" id="cfgToken" placeholder="Paste your Atlassian API token" class="mono" />
+    </div>
+    <div class="field">
+      <label>Project key</label>
+      <input type="text" id="cfgProject" placeholder="SPECLIB" class="mono" style="width:180px" />
+    </div>
+    <div class="field">
+      <label>Spec Index custom field ID &nbsp;<span style="font-size:11px;color:var(--text-hint)">(find in Jira Settings → Issues → Custom fields → click your field → copy ID from URL)</span></label>
+      <input type="text" id="cfgFieldId" placeholder="customfield_10100" class="mono" />
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="saveConfig()">Save & connect</button>
+      <button class="btn btn-sm" onclick="testConnection()" id="testBtn">Test connection</button>
+    </div>
+    <div id="configMsg" style="margin-top:10px"></div>
+  </div>
+
+  <!-- MAIN TOOL -->
+  <div id="mainTool" class="hidden">
+
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb" id="breadcrumb"></div>
+
+    <!-- STEP: ENTER PARENT OR BROWSE -->
+    <div class="card" id="stepEntry">
+      <div class="card-title">Enter parent issue key</div>
+      <div class="row" style="align-items:flex-end">
+        <div class="field">
+          <label>Parent issue key</label>
+          <input type="text" id="parentKey" placeholder="e.g. SPECLIB-19" class="mono" onkeydown="if(event.key==='Enter') fetchChildren()" />
+        </div>
+        <div class="field" style="flex:0">
+          <button class="btn btn-primary" onclick="fetchChildren()" id="fetchBtn">Fetch children</button>
+        </div>
+      </div>
+      <div id="fetchMsg" style="margin-top:10px"></div>
+    </div>
+
+    <!-- STEP: CHILDREN LIST -->
+    <div class="card hidden" id="stepChildren">
+      <div class="card-title" id="childrenTitle">Children</div>
+      <div class="level-info" id="levelInfo"></div>
+      <div class="siblings-list" id="siblingsList"></div>
+      <div class="divider"></div>
+      <div class="next-index-display" id="nextIndexDisplay">
+        <span class="next-index-value" id="nextIndexValue">—</span>
+        <span class="next-index-label">next available index at this level</span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="showCreateForm(false)" id="btnCreateHere">+ Create here</button>
+        <button class="btn btn-sm" onclick="drillDown()" id="btnDrill" disabled>↳ Go deeper into selected</button>
+      </div>
+    </div>
+
+    <!-- STEP: CREATE FORM -->
+    <div class="card hidden" id="stepCreate">
+      <div class="card-title">Create new requirement</div>
+      <div class="next-index-display">
+        <span class="next-index-value" id="createIndexValue">—</span>
+        <span class="next-index-label">will be written to Summary + Spec Index field</span>
+      </div>
+      <div class="field">
+        <label>Requirement text (Summary)</label>
+        <input type="text" id="newSummary" placeholder="e.g. restart MUST be possible via TR-069" />
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>Issue type</label>
+          <select id="newType">
+            <option>Story</option>
+            <option>Epic</option>
+            <option>Subtask</option>
+            <option>Task</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Label</label>
+          <select id="newLabel">
+            <option>General(SpecLIB)</option>
+            <option>WiFi(SpecLIB)</option>
+          </select>
+        </div>
+      </div>
+      <div id="createMsg" style="margin-top:10px"></div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="createIssue()" id="createBtn">Create in Jira ↗</button>
+        <button class="btn" onclick="cancelCreate()">Cancel</button>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>Runs entirely in your browser · API token stored in localStorage · No data sent anywhere except your Jira instance</footer>
+</div>
+
+<script>
+const STORAGE_KEY = 'speclib_config';
+let cfg = {};
+let navStack = []; // [{key, summary, index}]
+let currentChildren = [];
+let selectedChild = null;
+let pendingNextIndex = null;
+
+// ── CONFIG ──────────────────────────────────────────────
+
+function loadConfig() {
+  try { cfg = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch(e) { cfg = {}; }
+}
+
+function saveConfig() {
+  cfg.site = document.getElementById('cfgSite').value.trim().replace(/^https?:\/\//, '').replace(/\/$/, '');
+  cfg.email = document.getElementById('cfgEmail').value.trim();
+  cfg.token = document.getElementById('cfgToken').value.trim();
+  cfg.project = document.getElementById('cfgProject').value.trim().toUpperCase();
+  cfg.fieldId = document.getElementById('cfgFieldId').value.trim();
+
+  if (!cfg.site || !cfg.email || !cfg.token || !cfg.project) {
+    showMsg('configMsg', 'error', 'Please fill in site URL, email, API token, and project key.');
+    return;
+  }
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
+  showMsg('configMsg', 'success', 'Saved! You can now use the tool below.');
+  document.getElementById('configPanel').style.display = 'none';
+  document.getElementById('mainTool').classList.remove('hidden');
+}
+
+function showConfig() {
+  const panel = document.getElementById('configPanel');
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+}
+
+async function testConnection() {
+  const btn = document.getElementById('testBtn');
+  btn.disabled = true; btn.textContent = 'Testing…';
+  try {
+    const res = await jiraGet(`/rest/api/3/myself`);
+    showMsg('configMsg', 'success', `Connected as ${res.displayName} (${res.emailAddress})`);
+  } catch(e) {
+    showMsg('configMsg', 'error', 'Connection failed: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = 'Test connection';
+}
+
+// ── JIRA API ─────────────────────────────────────────────
+
+function authHeader() {
+  return 'Basic ' + btoa(cfg.email + ':' + cfg.token);
+}
+
+async function jiraGet(path) {
+  const res = await fetch(`https://${cfg.site}${path}`, {
+    headers: { 'Authorization': authHeader(), 'Accept': 'application/json' }
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function jiraPost(path, body) {
+  const res = await fetch(`https://${cfg.site}${path}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': authHeader(),
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res.json();
+}
+
+async function jiraPut(path, body) {
+  const res = await fetch(`https://${cfg.site}${path}`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': authHeader(),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+}
+
+// ── INDEX LOGIC ───────────────────────────────────────────
+
+function extractIndex(issue) {
+  // Try custom field first
+  if (cfg.fieldId && issue.fields[cfg.fieldId]) {
+    return issue.fields[cfg.fieldId].toString().trim();
+  }
+  // Fall back to parsing summary
+  const m = (issue.fields.summary || '').match(/^(\d[\d.]*)/);
+  return m ? m[1] : '';
+}
+
+function calcNextIndex(parentIndex, siblings) {
+  if (!siblings.length) return parentIndex + '.1';
+  let maxLast = 0;
+  const prefix = parentIndex + '.';
+  siblings.forEach(sib => {
+    const idx = extractIndex(sib);
+    if (idx.startsWith(prefix)) {
+      const rest = idx.slice(prefix.length);
+      const firstPart = parseInt(rest.split('.')[0], 10);
+      if (!isNaN(firstPart) && firstPart > maxLast) maxLast = firstPart;
+    }
+  });
+  return prefix + (maxLast + 1);
+}
+
+// ── NAVIGATION ────────────────────────────────────────────
+
+function renderBreadcrumb() {
+  const el = document.getElementById('breadcrumb');
+  let html = `<span class="crumb" onclick="resetToTop()">SPECLib</span>`;
+  navStack.forEach((s, i) => {
+    html += `<span class="crumb-sep">›</span>`;
+    const isCurrent = i === navStack.length - 1;
+    if (isCurrent) {
+      html += `<span class="crumb current">${s.index || s.key} ${s.summary ? '— ' + s.summary.slice(0, 40) : ''}</span>`;
+    } else {
+      html += `<span class="crumb" onclick="goToLevel(${i})">${s.index || s.key}</span>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+function resetToTop() {
+  navStack = [];
+  selectedChild = null;
+  document.getElementById('stepChildren').classList.add('hidden');
+  document.getElementById('stepCreate').classList.add('hidden');
+  document.getElementById('parentKey').value = '';
+  document.getElementById('fetchMsg').innerHTML = '';
+  renderBreadcrumb();
+}
+
+async function goToLevel(i) {
+  navStack = navStack.slice(0, i + 1);
+  selectedChild = null;
+  document.getElementById('parentKey').value = navStack[navStack.length - 1].key;
+  document.getElementById('stepCreate').classList.add('hidden');
+  renderBreadcrumb();
+  await fetchChildren();
+}
+
+// ── FETCH CHILDREN ────────────────────────────────────────
+
+async function fetchChildren() {
+  const keyRaw = document.getElementById('parentKey').value.trim().toUpperCase();
+  if (!keyRaw) return;
+
+  const btn = document.getElementById('fetchBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Fetching…';
+  showMsg('fetchMsg', 'info', '');
+  document.getElementById('stepChildren').classList.add('hidden');
+  document.getElementById('stepCreate').classList.add('hidden');
+
+  try {
+    // Fetch parent issue
+    const parentIssue = await jiraGet(`/rest/api/3/issue/${keyRaw}?fields=summary,${cfg.fieldId || 'customfield_10100'}`);
+    const parentSummary = parentIssue.fields.summary || '';
+    const parentIndex = extractIndex(parentIssue) || keyRaw;
+
+    // Fetch children via JQL
+    const jql = encodeURIComponent(`parent = ${keyRaw} ORDER BY created ASC`);
+    const fields = `summary,issuetype,labels,${cfg.fieldId || 'customfield_10100'}`;
+    const data = await jiraGet(`/rest/api/3/search?jql=${jql}&fields=${fields}&maxResults=100`);
+    currentChildren = data.issues || [];
+
+    // Update nav stack
+    const existing = navStack.findIndex(s => s.key === keyRaw);
+    if (existing === -1) {
+      navStack.push({ key: keyRaw, summary: parentSummary.replace(/^\d[\d.]*\s*/, ''), index: parentIndex });
+    }
+    renderBreadcrumb();
+
+    // Calculate next index
+    pendingNextIndex = calcNextIndex(parentIndex, currentChildren);
+
+    // Render children list
+    renderChildrenList(parentIndex, parentSummary);
+
+  } catch(e) {
+    showMsg('fetchMsg', 'error', 'Error fetching issue: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Fetch children';
+}
+
+function renderChildrenList(parentIndex, parentSummary) {
+  const el = document.getElementById('siblingsList');
+  const title = document.getElementById('childrenTitle');
+  const levelInfo = document.getElementById('levelInfo');
+
+  title.innerHTML = `Children of <span style="font-family:var(--mono);color:var(--blue)">${parentIndex}</span><span class="tag">${currentChildren.length} items</span>`;
+  levelInfo.textContent = parentSummary.replace(/^\d[\d.]*\s*/, '');
+
+  if (!currentChildren.length) {
+    el.innerHTML = '<div class="empty">No children yet — this will be the first one.</div>';
+  } else {
+    el.innerHTML = currentChildren.map((iss, i) => {
+      const idx = extractIndex(iss) || '—';
+      const label = iss.fields.summary || '';
+      const key = iss.key;
+      return `<div class="sib-row" id="sib-${i}" onclick="selectSibling(${i})">
+        <span class="sib-index">${idx}</span>
+        <span class="sib-label">${escHtml(label.replace(/^\d[\d.]*\s*/, ''))}</span>
+        <span class="sib-key">${key}</span>
+        <span class="sib-arrow">›</span>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('nextIndexValue').textContent = pendingNextIndex;
+  document.getElementById('stepChildren').classList.remove('hidden');
+  document.getElementById('btnDrill').disabled = true;
+  selectedChild = null;
+}
+
+function selectSibling(i) {
+  selectedChild = currentChildren[i];
+  document.querySelectorAll('.sib-row').forEach((r, j) => r.classList.toggle('selected', j === i));
+  document.getElementById('btnDrill').disabled = false;
+}
+
+async function drillDown() {
+  if (!selectedChild) return;
+  document.getElementById('parentKey').value = selectedChild.key;
+  document.getElementById('stepCreate').classList.add('hidden');
+  selectedChild = null;
+  await fetchChildren();
+}
+
+// ── CREATE ────────────────────────────────────────────────
+
+function showCreateForm() {
+  document.getElementById('createIndexValue').textContent = pendingNextIndex;
+  document.getElementById('newSummary').value = '';
+  document.getElementById('createMsg').innerHTML = '';
+  document.getElementById('stepCreate').classList.remove('hidden');
+  document.getElementById('newSummary').focus();
+}
+
+function cancelCreate() {
+  document.getElementById('stepCreate').classList.add('hidden');
+}
+
+async function createIssue() {
+  const summary = document.getElementById('newSummary').value.trim();
+  if (!summary) {
+    showMsg('createMsg', 'error', 'Please enter the requirement text.');
+    return;
+  }
+
+  const issueType = document.getElementById('newType').value;
+  const label = document.getElementById('newLabel').value;
+  const parentKey = navStack[navStack.length - 1].key;
+  const fullSummary = `${pendingNextIndex} ${summary}`;
+
+  const btn = document.getElementById('createBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Creating…';
+
+  try {
+    const body = {
+      fields: {
+        project: { key: cfg.project },
+        summary: fullSummary,
+        issuetype: { name: issueType },
+        labels: [label],
+        parent: { key: parentKey }
+      }
+    };
+
+    // Add Spec Index custom field if configured
+    if (cfg.fieldId) {
+      body.fields[cfg.fieldId] = pendingNextIndex;
+    }
+
+    const created = await jiraPost('/rest/api/3/issue', body);
+    showMsg('createMsg', 'success', `Created ${created.key} — "${fullSummary}"`);
+
+    // Refresh children list
+    await fetchChildren();
+    document.getElementById('stepCreate').classList.add('hidden');
+
+  } catch(e) {
+    showMsg('createMsg', 'error', 'Failed to create issue: ' + e.message);
+  }
+
+  btn.disabled = false; btn.textContent = 'Create in Jira ↗';
+}
+
+// ── UTILS ─────────────────────────────────────────────────
+
+function showMsg(id, type, text) {
+  const el = document.getElementById(id);
+  if (!text) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="alert alert-${type === 'error' ? 'error' : type === 'success' ? 'success' : 'info'}">${escHtml(text)}</div>`;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+
+loadConfig();
+
+if (cfg.site && cfg.email && cfg.token && cfg.project) {
+  document.getElementById('configPanel').style.display = 'none';
+  document.getElementById('mainTool').classList.remove('hidden');
+  // Pre-fill config fields
+  document.getElementById('cfgSite').value = cfg.site || '';
+  document.getElementById('cfgEmail').value = cfg.email || '';
+  document.getElementById('cfgToken').value = cfg.token || '';
+  document.getElementById('cfgProject').value = cfg.project || '';
+  document.getElementById('cfgFieldId').value = cfg.fieldId || '';
+} else {
+  // Pre-fill what we know
+  document.getElementById('cfgProject').value = 'SPECLIB';
+}
+renderBreadcrumb();
+</script>
+</body>
+</html>
