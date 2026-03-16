@@ -455,8 +455,10 @@ function authHeader() {
   return 'Basic ' + btoa(cfg.email + ':' + cfg.token);
 }
 
+const PROXY = "https://bitter-wave-3487.sammy-tseng.workers.dev";
+
 async function jiraGet(path) {
-  const res = await fetch(`https://${cfg.site}${path}`, {
+  const res = await fetch(`${PROXY}?site=${cfg.site}&path=${encodeURIComponent(path)}`, {
     headers: { 'Authorization': authHeader(), 'Accept': 'application/json' }
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
@@ -464,7 +466,8 @@ async function jiraGet(path) {
 }
 
 async function jiraPost(path, body) {
-  const res = await fetch(`https://${cfg.site}${path}`, {
+  // routed via proxy
+  const res = await fetch(`${PROXY}?site=${cfg.site}&path=${encodeURIComponent(path)}`, {
     method: 'POST',
     headers: {
       'Authorization': authHeader(),
@@ -478,7 +481,8 @@ async function jiraPost(path, body) {
 }
 
 async function jiraPut(path, body) {
-  const res = await fetch(`https://${cfg.site}${path}`, {
+  // routed via proxy
+  const res = await fetch(`${PROXY}?site=${cfg.site}&path=${encodeURIComponent(path)}`, {
     method: 'PUT',
     headers: {
       'Authorization': authHeader(),
